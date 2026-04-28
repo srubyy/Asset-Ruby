@@ -253,12 +253,15 @@ class _AssetHubScreenState extends State<AssetHubScreen> with TickerProviderStat
                 // Right: info panel
                 SizedBox(
                   width: 260,
-                  child: Column(
-                    children: [
-                      _infoPanel(),
-                      const SizedBox(height: 16),
-                      _techStackPanel(),
-                    ],
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _infoPanel(),
+                        const SizedBox(height: 16),
+                        _techStackPanel(),
+                      ],
+                    ),
                   ),
                 ),
               ],

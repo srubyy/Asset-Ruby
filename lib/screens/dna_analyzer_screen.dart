@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:video_player/video_player.dart';
 import '../theme.dart';
 import '../services/gemini_service.dart';
+import '../widgets/video_panel.dart';
 
 class DnaAnalyzerScreen extends StatefulWidget {
   const DnaAnalyzerScreen({super.key});
@@ -22,9 +24,27 @@ class _DnaAnalyzerScreenState extends State<DnaAnalyzerScreen>
   late AnimationController _pulseController;
 
   final List<_DnaAsset> _assets = [
-    _DnaAsset('NBA Finals Q4 Highlights', 'A92B3F7D...12', 'Twitter (X)', 0.96),
-    _DnaAsset('UFC 300 Main Event', 'F83C9A2E...99', 'Telegram', 0.91),
-    _DnaAsset('Champions League Final', 'D11E7B4F...44', 'IPTV Stream', 0.98),
+    _DnaAsset(
+      'NBA Finals Q4 Highlights',
+      'A92B3F7D...12',
+      'Twitter (X)',
+      0.96,
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    ),
+    _DnaAsset(
+      'UFC 300 Main Event',
+      'F83C9A2E...99',
+      'Telegram',
+      0.91,
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    ),
+    _DnaAsset(
+      'Champions League Final',
+      'D11E7B4F...44',
+      'IPTV Stream',
+      0.98,
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    ),
   ];
 
   @override
@@ -232,70 +252,46 @@ class _DnaAnalyzerScreenState extends State<DnaAnalyzerScreen>
   }
 
   Widget _buildVideoPanel(String label, Color color, String hash, bool showOverlay, [GeminiAnalysisResult? result]) {
-    final mutations = result?.mutations ?? [];
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF080808),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Center(child: Icon(LucideIcons.playCircle, size: 48, color: Colors.white.withOpacity(0.12))),
-            // Heatmap zones — either AI-generated or static
-            if (showOverlay && mutations.isNotEmpty) ..._buildAiHeatZones(mutations),
-            if (showOverlay && mutations.isEmpty) ...[
-              Positioned(top: 0, right: 0, child: _heatZone(65, 30, AppTheme.error, 'WATERMARK')),
-              Positioned(top: 44, left: 18, child: _heatZone(75, 22, Colors.orange, 'CROP')),
-              Positioned(bottom: 32, left: 38, child: _heatZone(100, 24, Colors.orange, 'RE-ENCODE')),
-            ],
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.9)]),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text(hash, style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace')),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final asset = _assets[_selectedAssetIndex];
+    return VideoPanel(
+      key: ValueKey('${asset.name}_${showOverlay ? "pirated" : "original"}'),
+      label: label,
+      borderColor: color,
+      hashLabel: hash,
+      videoUrl: asset.videoUrl,
+      showOverlay: showOverlay,
+      heatZones: showOverlay ? (result != null ? _buildAiHeatZones(result.mutations) : _buildStaticHeatZones()) : [],
     );
   }
 
-  List<Widget> _buildAiHeatZones(List<GeminiMutation> mutations) {
-    final positions = [
-      {'top': 0.0, 'right': 0.0},
-      {'top': 40.0, 'left': 16.0},
-      {'bottom': 35.0, 'left': 35.0},
-      {'top': 80.0, 'right': 20.0},
+  List<HeatZone> _buildStaticHeatZones() {
+    return [
+      HeatZone(top: 10, right: 10, w: 70, h: 26, color: AppTheme.error, label: 'WATERMARK'),
+      HeatZone(top: 50, left: 20, w: 80, h: 26, color: Colors.orange, label: 'CROP'),
+      HeatZone(bottom: 50, left: 40, w: 100, h: 26, color: Colors.orange, label: 'RE-ENCODE'),
     ];
-    return mutations.take(positions.length).toList().asMap().entries.map((e) {
+  }
+
+  List<HeatZone> _buildAiHeatZones(List<GeminiMutation> mutations) {
+    final positions = [
+      {'top': 10.0, 'right': 10.0},
+      {'top': 50.0, 'left': 20.0},
+      {'bottom': 50.0, 'left': 40.0},
+      {'top': 90.0, 'right': 30.0},
+    ];
+    return mutations.asMap().entries.take(positions.length).map((e) {
       final m = e.value;
       final pos = positions[e.key];
       final color = _mutationColor(m.type);
-      return Positioned(
+      return HeatZone(
         top: pos['top'],
         bottom: pos['bottom'],
         left: pos['left'],
         right: pos['right'],
-        child: _heatZone(
-          e.key == 0 ? 70 : e.key == 1 ? 80 : 95,
-          26,
-          color,
-          m.name.split(' ').first.toUpperCase(),
-        ),
+        w: e.key == 0 ? 80 : e.key == 1 ? 90 : 100,
+        h: 26,
+        color: color,
+        label: m.name.split(' ').first.toUpperCase(),
       );
     }).toList();
   }
@@ -573,5 +569,6 @@ class _AiStep {
 class _DnaAsset {
   final String name, hash, platform;
   final double confidence;
-  _DnaAsset(this.name, this.hash, this.platform, this.confidence);
+  final String videoUrl;
+  _DnaAsset(this.name, this.hash, this.platform, this.confidence, this.videoUrl);
 }

@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 class GeminiService {
   // Paste your Google AI Studio API key here:
   // Get one free at: https://aistudio.google.com/app/apikey
-  static const String _apiKey = 'AIzaSyDEMO_REPLACE_WITH_YOUR_KEY';
+  static const String _apiKey = 'AIzaSyCJ0v3zvg731XsYB3SUs77mhn7IlG8Rlfk';
 
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
