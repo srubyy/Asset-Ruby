@@ -29,3 +29,4 @@ lib/firebase_options.dart
 
 # Flutter/Dart
 pubspec.lock
+functions/node_modules/
